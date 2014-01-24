@@ -5,9 +5,25 @@
 #include <opencv2/calib3d/calib3d.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 #include <iostream>
+#include <fstream>
 #include <QString>
+#include <QDebug>
+#include <fstream>
+#include <iostream>
 #include "libviso2/viso_mono.h"
-#include <png++/png.hpp>
+//#include <png++/png.hpp>
+/*-----------------------------------------
+
+-Dopracowanie zapisu do pliku
+
+-Dokumentacja na 31
+    -ogólny opis pracy
+    -załącznik licencje
+    -Technikalia:
+    --format zapisu do pliku.
+    --opis parametrów do ustawienia przed odpaleniem
+-Po 10 razy algorytm przemielić
+*/
 
 class Core
 {
@@ -26,14 +42,18 @@ public:
     void saveCalibration(std::string path);
     void loadCalibration(std::string path);
     bool addImgToOdometry(cv::Mat img, int frameNo, QString urlToFile);
-    bool calibOk;
 
 
+    Matrix pose;
+    std::ofstream fileWithOdometry;
 private:
+
+
     int calibrationSamplesCounter;
     int goodSamplesCounter;
     bool isSetPatternSizeDone;
     bool isSetImageSizeDone;
+    bool isCalibrationDone;
 
     int minimumPatternSizeWidth; //default =2
     int minimumPatternSizeHeight; //default =2
@@ -48,8 +68,8 @@ private:
     cv::Size imageSize;
     cv::Mat cameraMatrix, distCoeffs;
     cv::vector<cv::vector<cv::Point2f> > imagePoints;
-    VisualOdometryMono *viso;
 
+    VisualOdometryMono *viso;
 
 };
 
