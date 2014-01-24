@@ -3,8 +3,8 @@
 #include "libviso2/demo.h"
 int main(int argc, char *argv[])
 {
-    argv[1]="/home/haskis/Pictures/Projects/LibViso2DataSet/2010_03_09_drive_0019";
-    demo(2,argv);
+ //argv[1]="/home/wiktor/Pictures/Projects/LibViso2DataSet/2010_03_09_drive_0019";
+  //  demo(2,argv);
 
 
 

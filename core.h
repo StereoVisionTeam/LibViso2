@@ -5,13 +5,17 @@
 #include <opencv2/calib3d/calib3d.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 #include <iostream>
+#include <QString>
+#include "libviso2/viso_mono.h"
+#include <png++/png.hpp>
+
 class Core
 {
 public:
     Core();
 
     bool addSampleToCalibration(cv::Mat &calibrationImage);
-    bool calibrateCamera();
+    bool calibrateCamera(QString url);
     void setPatternSize(cv::Size x){ patternSize =x;
                                  isSetPatternSizeDone=true;}
     void setPatternSize(int x, int y){ patternSize = cv::Size(x,y);
@@ -19,6 +23,11 @@ public:
     void setImageSize(cv::Size x) { imageSize= x;
                                 isSetImageSizeDone=true;}
     void setsquareSize(double x){ squareSize= x;}
+    void saveCalibration(std::string path);
+    void loadCalibration(std::string path);
+    bool addImgToOdometry(cv::Mat img, int frameNo, QString urlToFile);
+    bool calibOk;
+
 
 private:
     int calibrationSamplesCounter;
@@ -39,6 +48,9 @@ private:
     cv::Size imageSize;
     cv::Mat cameraMatrix, distCoeffs;
     cv::vector<cv::vector<cv::Point2f> > imagePoints;
+    VisualOdometryMono *viso;
+
+
 };
 
 #endif // CORE_H
