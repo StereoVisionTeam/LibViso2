@@ -63,7 +63,7 @@ bool Core::addSampleToCalibration(Mat &calibrationImage){
 
     return true;
 }
-bool Core::calibrateCamera(QString url){
+bool Core::calibrateCamera(std::string outputURL){
 
     if(goodSamplesCounter<minimumSamplesForCalibration){
         cerr<<"Not enough calibration samples (in Core::calibrateCamera)";
@@ -83,62 +83,89 @@ bool Core::calibrateCamera(QString url){
     vector<Mat> rvec, tvec;
 
     bool result = cv::calibrateCamera(objectPoints,imagePoints,imageSize,cameraMatrix,distCoeffs,rvec,tvec);
-    qDebug()<<"result"<<result<<endl;
+    //qDebug()<<"result"<<result<<endl;
 
-    for(int i=0;i<9;i++)
-        qDebug()<<cameraMatrix.at<float>(i);
+    //for(int i=0;i<9;i++)
+        //qDebug()<<cameraMatrix.at<float>(i);
 
     if(result){
-        saveCalibration(url.toUtf8().constData());
+        saveCalibration(outputURL);
     }
+
     isCalibrationDone=result;
 
-
-
+    //Create visualOdometryMono object
     if(isCalibrationDone){
         VisualOdometryMono::parameters param;
         param.calib.f  = cameraMatrix.data[0]; // focal length in pixels
         param.calib.cu = cameraMatrix.data[2]; // principal point (u-coordinate) in pixels
         param.calib.cv = cameraMatrix.data[5]; // principal point (v-coordinate) in pixels
-
+        //param.base= 0.572;
         viso=new VisualOdometryMono(param);
     }
 
     return result;
 }
-void Core::saveCalibration(std::string path){
+void Core::calibrateFromImages(std::string inputImagesPathURL , std::string outputCalibrationDataURL, int numberOfSamples){
 
+    cv::Mat image;
+    //Kalibracja z pliku
+    for(int i=1; i<numberOfSamples;i++)
+    {
+        char base_name[256];
+        sprintf(base_name,"%06d.JPG",i);
+        string actualImageURL  = inputImagesPathURL +"/" + base_name;
 
-     cv::FileStorage file2(path, FileStorage::WRITE);
-     qDebug()<<"Saving calibration ... ";
-     file2<<"cameraMatrix"<<cameraMatrix;
-     file2.release();
-     qDebug()<<"Cabibration Saved";
+        image = cv::imread(actualImageURL,CV_LOAD_IMAGE_GRAYSCALE);
+        if(! image.data ){
+            cout << "Could not open or find the image for calibration" << std::endl ;
+            break;
+        }
+        
+        //Temp
+        setImageSize(image.size());
+        // /Temp
+        
+        addSampleToCalibration(image);
+    }
+    calibrateCamera(outputCalibrationDataURL);
 }
-void Core::loadCalibration(std::string path){
 
-   cv::FileStorage file2(path, FileStorage::READ);
+void Core::saveCalibration(std::string outputURL){
 
-   file2["cameraMatrix"]>> cameraMatrix;
+     cv::FileStorage outputFile(outputURL, FileStorage::WRITE);
+     outputFile<<"cameraMatrix"<<cameraMatrix;
+     outputFile.release();
+}
 
-   isCalibrationDone = true;
-   VisualOdometryMono::parameters param;
+void Core::loadCalibration(std::string inputURL){
 
-    param.calib.f  = cameraMatrix.data[0]; // focal length in pixels
-    param.calib.cu = cameraMatrix.data[2]; // principal point (u-coordinate) in pixels
-    param.calib.cv = cameraMatrix.data[5]; // principal point (v-coordinate) in pixels
+    cv::FileStorage inputFile(inputURL, FileStorage::READ);
+    if(!inputFile.isOpened()){
+        std::cerr<<"Cannot open calibrationData file in Core::loadCalibration";
+        return;
+    }
+    inputFile["cameraMatrix"] >> cameraMatrix;
+    isCalibrationDone = true;
 
+//Create visualOdometryMono object
+    VisualOdometryMono::parameters param;
+
+    param.calib.f  = cameraMatrix.at<double>(0); // focal length in pixels
+    param.calib.cu = cameraMatrix.at<double>(2); // principal point (u-coordinate) in pixels
+    param.calib.cv = cameraMatrix.at<double>(5); // principal point (v-coordinate) in pixels
+
+    //param.base= 0.572;
     viso=new VisualOdometryMono(param);
 
 }
-bool Core::addImgToOdometry(cv::Mat img, int frameNo, QString urlToFile){
+
+bool Core::addImgToOdometry(cv::Mat img){
 
     if(!isCalibrationDone){
         cerr<<"To do Odometry you need to calibrate Camera (in Core::addImgToOdometry";
         return false;
     }
-
-    cv::FileStorage file(urlToFile.toUtf8().constData(), FileStorage::WRITE);
 
     // image dimensions
     int32_t width= img.cols;
@@ -150,17 +177,16 @@ bool Core::addImgToOdometry(cv::Mat img, int frameNo, QString urlToFile){
     if (viso->process(img.datastart,dims)) {
 
         pose = pose* Matrix::inv(viso->getMotion());
-        double num_matches = viso->getNumberOfMatches();
-        double num_inliers = viso->getNumberOfInliers();
-        cout << ", Matches: " << num_matches;
-        cout << ", Inliers: " << 100.0*num_inliers/num_matches << " %" << ", Current pose: " << endl;
-        cout << pose << endl << endl;
+        //double num_matches = viso->getNumberOfMatches();
+        //double num_inliers = viso->getNumberOfInliers();
+        //cout << ", Matches: " << num_matches;
+        //cout << ", Inliers: " << 100.0*num_inliers/num_matches << " %" << ", Current pose: " << endl;
+        //cout << pose << endl << endl;
 
       } else {
         cout << " ... failed!" << endl;
         return false;
       }
-
 
   return true;
 }
